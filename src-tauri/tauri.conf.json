@@ -1,0 +1,20 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "pane-view",
+  "version": "0.1.0",
+  "identifier": "com.pane-view.app",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "security": {
+      "csp": null
+    },
+    "windows": [],
+    "withGlobalTauri": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all"
+  }
+}
