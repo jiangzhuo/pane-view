@@ -1,5 +1,4 @@
-use serde::Deserialize;
-use tauri::{Manager, WebviewWindow};
+use tauri::{WebviewWindow};
 
 async fn create_webview_window(
     app: &tauri::AppHandle,
