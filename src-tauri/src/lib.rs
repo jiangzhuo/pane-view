@@ -1,78 +1,107 @@
-use tauri::{window::WindowBuilder, webview::WebviewBuilder, WebviewUrl, AppHandle, LogicalPosition, LogicalSize};
+use tao::{
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+};
+use wry::{
+    dpi::{LogicalPosition, LogicalSize},
+    Rect, WebViewBuilder,
+};
 
-pub async fn create_webview_window(
-    app: &AppHandle,
-    urls: &[&str],
-    label: &str,
-    title: &str,
-    x: f64,
-    y: f64,
-) -> Result<(), String> {
-    println!("Creating window with multiple WebViews: {}", label);
-    
-    // Create the main window
-    let window = WindowBuilder::new(app, label)
-        .title(title)
-        .inner_size(800.0, 768.0)
-        .position(x, y)
-        .build()
-        .map_err(|e| {
-            println!("Failed to build window: {}", e);
-            e.to_string()
-        })?;
+pub fn create_webview_window(urls: &[&str], x: f64, y: f64, title: &str) -> wry::Result<()> {
+    let event_loop = EventLoop::new();
+    let window = WindowBuilder::new()
+        .with_title(title)
+        .with_inner_size(LogicalSize::new(800.0, 768.0))
+        .with_position(LogicalPosition::new(x, y))
+        .build(&event_loop)
+        .unwrap();
 
-    // Add webviews to the window
+    let build_webview = |builder: WebViewBuilder<'_>| -> wry::Result<wry::WebView> {
+        #[cfg(any(
+            target_os = "windows",
+            target_os = "macos",
+            target_os = "ios",
+            target_os = "android"
+        ))]
+        let webview = builder.build(&window)?;
+
+        #[cfg(not(any(
+            target_os = "windows",
+            target_os = "macos",
+            target_os = "ios",
+            target_os = "android"
+        )))]
+        let webview = {
+            use gtk::prelude::*;
+            use tao::platform::unix::WindowExtUnix;
+            use wry::WebViewBuilderExtUnix;
+
+            let fixed = gtk::Fixed::new();
+            let vbox = window.default_vbox().unwrap();
+            vbox.pack_start(&fixed, true, true, 0);
+            fixed.show_all();
+            builder.build_gtk(&fixed)?
+        };
+
+        Ok(webview)
+    };
+
+    let size = window.inner_size().to_logical::<u32>(window.scale_factor());
+    let mut webviews = Vec::new();
+
+    // Create webviews based on provided URLs
     for (i, &url) in urls.iter().enumerate() {
-        let webview_label = format!("{}_webview_{}", label, i);
-        let x_pos = if i == 0 { 0.0 } else { 400.0 };  // First view at 0, second at 400
-        let width = 400.0;  // Each view takes half the window width
-        
-        window.add_child(
-            WebviewBuilder::new(
-                &webview_label,
-                WebviewUrl::External(url.parse().unwrap())
-            )
-            .initialization_script(&"document.body.style.margin = '0'; document.documentElement.style.margin = '0';".to_string()),
-            LogicalPosition::new(x_pos, 0.0),
-            LogicalSize::new(width, 768.0)
-        ).map_err(|e| {
-            println!("Failed to build webview: {}", e);
-            e.to_string()
-        })?;
+        let x_pos = if i == 0 { 0 } else { size.width / 2 };
+        let builder = WebViewBuilder::new()
+            .with_bounds(Rect {
+                position: LogicalPosition::new(x_pos, 0).into(),
+                size: LogicalSize::new(size.width / 2, size.height).into(),
+            })
+            .with_url(url);
+        let webview = build_webview(builder)?;
+        webviews.push(webview);
     }
 
-    println!("Window '{}' with multiple WebViews built successfully", label);
-    Ok(())
+    event_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Wait;
+
+        match event {
+            Event::WindowEvent {
+                event: WindowEvent::Resized(size),
+                ..
+            } => {
+                let size = size.to_logical::<u32>(window.scale_factor());
+                for (i, webview) in webviews.iter().enumerate() {
+                    let x_pos = if i == 0 { 0 } else { size.width / 2 };
+                    webview
+                        .set_bounds(Rect {
+                            position: LogicalPosition::new(x_pos, 0).into(),
+                            size: LogicalSize::new(size.width / 2, size.height).into(),
+                        })
+                        .unwrap();
+                }
+            }
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => *control_flow = ControlFlow::Exit,
+            _ => {}
+        }
+    });
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    println!("Starting Tauri application...");
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
-            println!("Tauri application setup started");
-            
-            let app_handle = app.handle().clone();
-            
-            // 直接创建 WebViews
-            tauri::async_runtime::spawn(async move {
-                // 创建 Google WebView
-                if let Err(e) = create_webview_window(
-                    &app_handle,
-                    &["https://www.google.com/", "https://www.tradingview.com/"],
-                    "google-view",
-                    "Google",
-                    100.0, // 初始 x 位置
-                    100.0, // 初始 y 位置
-                ).await {
-                    println!("Failed to create Google WebView: {}", e);
-                }
-            });
-
-            println!("Tauri application setup complete");
-            Ok(())
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    println!("Starting application...");
+    
+    // Create a window with Google and TradingView
+    if let Err(e) = create_webview_window(
+        &["https://www.google.com/", "https://www.tradingview.com/"],
+        100.0,
+        100.0,
+        "Google & TradingView"
+    ) {
+        eprintln!("Failed to create window: {}", e);
+    }
 }
