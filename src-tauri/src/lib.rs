@@ -32,9 +32,7 @@ pub async fn create_webview_window(
                 &webview_label,
                 WebviewUrl::External(url.parse().unwrap())
             )
-            .initialization_script(&format!(
-                "document.body.style.margin = '0'; document.documentElement.style.margin = '0';"
-            )),
+            .initialization_script(&"document.body.style.margin = '0'; document.documentElement.style.margin = '0';".to_string()),
             LogicalPosition::new(x_pos, 0.0),
             LogicalSize::new(width, 768.0)
         ).map_err(|e| {
@@ -62,7 +60,7 @@ pub fn run() {
                 // 创建 Google WebView
                 if let Err(e) = create_webview_window(
                     &app_handle,
-                    &["https://www.google.com/", "https://www.bing.com/"],
+                    &["https://www.google.com/", "https://www.tradingview.com/"],
                     "google-view",
                     "Google",
                     100.0, // 初始 x 位置
