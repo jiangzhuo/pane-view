@@ -5,8 +5,7 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
 };
-use wry::{dpi::{LogicalPosition, LogicalSize}, Rect, WebContext, WebViewBuilder};
-
+use wry::{dpi::{LogicalPosition, LogicalSize}, Rect, WebContext, WebViewBuilder, WebViewExtUnix};
 use std::path::PathBuf;
 use webkit2gtk::WebContextBuilder;
 use winit::event::{DeviceEvent, DeviceId, RawKeyEvent};
@@ -27,7 +26,7 @@ impl ApplicationHandler for State {
         let size = window.inner_size().to_logical::<u32>(window.scale_factor());
 
         // URLs for the webviews
-        let urls = vec!["https://www.tradingview.com/chart/YNbokaxw/?symbol=FOREXCOM%3AJP225", "https://www.tradingview.com/chart/YNbokaxw/?symbol=ETHBTC"];
+        let urls = vec!["https://www.tradingview.com/chart/?symbol=FOREXCOM%3AJP225", "https://www.tradingview.com/chart/?symbol=ETHBTC"];
 
         #[cfg(target_os = "linux")]
         let data_path =
@@ -110,7 +109,7 @@ impl ApplicationHandler for State {
         }
     }
 
-    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         #[cfg(any(
             target_os = "linux",
             target_os = "dragonfly",
@@ -119,10 +118,12 @@ impl ApplicationHandler for State {
             target_os = "openbsd",
         ))]
         {
+            use gtk::prelude::*;
             while gtk::events_pending() {
                 gtk::main_iteration_do(false);
             }
         }
+        event_loop.set_control_flow(ControlFlow::Poll);
     }
 }
 
