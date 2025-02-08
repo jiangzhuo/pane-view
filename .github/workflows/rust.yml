@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, windows-latest, macos-latest]
+        platform: [ubuntu-latest]
 
     runs-on: ${{ matrix.platform }}
 
@@ -38,18 +38,6 @@ jobs:
       uses: swatinem/rust-cache@v2
       with:
         workspaces: './src-tauri -> target'
-
-    - name: Install Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 'lts/*'
-        cache: 'npm'
-
-    - name: Install frontend dependencies
-      run: npm install
-
-    - name: Build frontend
-      run: npm run build
 
     - name: Build
       working-directory: ./src-tauri
