@@ -1,7 +1,8 @@
 use winit::{
     application::ApplicationHandler,
-    event::WindowEvent,
-    event_loop::{ActiveEventLoop, EventLoop},
+    event::{Event, WindowEvent, ElementState},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
 };
 use wry::{
@@ -9,15 +10,13 @@ use wry::{
     Rect, WebViewBuilder,
 };
 
-use tray_icon::{TrayIcon, TrayIconBuilder, menu::Menu, menu::MenuItem, Icon, TrayIconEvent};
 use std::path::PathBuf;
-use tray_icon::menu::MenuEvent;
+use winit::event::{DeviceEvent, DeviceId, RawKeyEvent};
 
 #[derive(Default)]
 struct State {
     window: Option<Window>,
     webviews: Vec<wry::WebView>,
-    tray: Option<TrayIcon>,
 }
 
 impl ApplicationHandler for State {
@@ -47,43 +46,30 @@ impl ApplicationHandler for State {
         }
 
         self.window = Some(window);
+    }
 
-
-
-
-        // Create tray icon
-        let icon_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("icons")
-            .join("icon.png");
-
-        let icon = {
-            let icon_rgba = image::open(&icon_path)
-                .expect("Failed to open icon path")
-                .into_rgba8();
-            let (icon_width, icon_height) = icon_rgba.dimensions();
-            Icon::from_rgba(icon_rgba.into_raw(), icon_width, icon_height)
-                .expect("Failed to create icon")
-        };
-        let tray_menu = Menu::new();
-        let full_screen_item = MenuItem::new("Full Screen", true, None);
-        let quit_item = MenuItem::new("Quit", true, None);
-
-        tray_menu.append_items(&[&full_screen_item, &quit_item]).expect("Failed to append items to tray menu");
-
-        println!("Tray menu items added: Quit and Full Screen");
-
-
-        let tray = TrayIconBuilder::new()
-            .with_icon(icon)
-            .with_menu(Box::new(tray_menu))
-            .with_tooltip("Pane View")
-            .build();
-
-        println!("Tray icon built with menu");
-
-        self.tray = Some(tray.unwrap());
-        println!("Tray icon added to system tray");
-
+    fn device_event(&mut self, event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
+        match event {
+            DeviceEvent::Added => {
+                println!("Device added: {:?}", device_id);
+            }
+            DeviceEvent::Removed => {
+                println!("Device removed: {:?}", device_id);
+            }
+            DeviceEvent::Key(key_event) if key_event.physical_key == KeyCode::F11 && key_event.state.is_pressed() => {
+                println!("F11 pressed, toggling full screen");
+                if let Some(window) = &self.window {
+                    if window.fullscreen().is_some() {
+                        println!("Unsetting fullscreen");
+                        window.set_fullscreen(None);
+                    } else {
+                        println!("Setting fullscreen");
+                        window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 
     fn window_event(
@@ -110,19 +96,28 @@ impl ApplicationHandler for State {
             WindowEvent::CloseRequested => {
                 std::process::exit(0);
             }
+            // WindowEvent::KeyboardInput { event, .. } => {
+            //     println!("Keyboard input event: {:?}", event);
+            //     if let PhysicalKey::Code(KeyCode::F11) = event.physical_key {
+            //         println!("F11 key was pressed!");
+            //         if event.state == ElementState::Pressed {
+            //             if let Some(window) = &self.window {
+            //                 if window.fullscreen().is_some() {
+            //                     println!("Unsetting fullscreen");
+            //                     window.set_fullscreen(None);
+            //                 } else {
+            //                     println!("Setting fullscreen");
+            //                     window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
             _ => {}
         }
     }
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
-
-        if let Ok(event) = TrayIconEvent::receiver().try_recv() {
-            println!("tray event: {:?}", event);
-        }
-        if let Ok(event) = MenuEvent::receiver().try_recv() {
-            println!("menu event: {:?}", event);
-        }
-
         #[cfg(any(
             target_os = "linux",
             target_os = "dragonfly",
@@ -166,9 +161,5 @@ pub fn run() {
     let event_loop = EventLoop::new().unwrap();
     let mut state = State::default();
 
-
     event_loop.run_app(&mut state).unwrap();
-
-
-
 }
