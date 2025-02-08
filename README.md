@@ -5,10 +5,30 @@ A modern window management tool built with Tauri.
 ## Features
 
 - 🚀 Built with Tauri for optimal performance
-- 🎯 Drag and drop support
-- 🔒 Secure system integration
-- 🎨 Modern user interface
+- 📊 Multi-pane TradingView integration
+- 🔄 Persistent web context with local data storage
+- ⌨️ Keyboard shortcuts support (F11 for fullscreen toggle)
+- 🖱️ Custom right-click menu handling
+- 🎨 Modern split-pane interface
 - 💻 Cross-platform support (Windows, macOS, Linux)
+
+## Technical Details
+
+### Window Management
+- Split-pane layout with dynamic resizing
+- Each pane takes exactly half of the window width
+- Automatic layout adjustment on window resize
+- Fullscreen toggle support with F11 key
+
+### Web Integration
+- Unified web context across panes
+- Persistent data storage in `~/.config/pane-view/` (Linux)
+- Custom JavaScript injection for UI customization
+- Default TradingView chart configuration
+
+### Default URLs
+- Left pane: TradingView JP225 chart
+- Right pane: TradingView ETHBTC chart
 
 ## Tech Stack
 
@@ -63,19 +83,9 @@ cargo tauri build
 
 - `/src` - Frontend source code
 - `/src-tauri` - Rust backend code
-  - `src/lib.rs` - Core library code
+  - `src/lib.rs` - Core window management and webview integration
+  - `src/main.rs` - Application entry point
   - `Cargo.toml` - Rust project configuration and dependencies
-
-## Features
-
-- Drag and drop support
-- Protocol integration
-- Developer tools
-- Transparent window support
-- Fullscreen mode
-- Linux-specific features
-- macOS proxy support
-- System WebView integration
 
 ## Contributing
 
