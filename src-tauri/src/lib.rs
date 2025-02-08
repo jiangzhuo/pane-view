@@ -1,14 +1,12 @@
 use winit::{
     application::ApplicationHandler,
-    event::{Event, WindowEvent, ElementState},
+    event::{WindowEvent},
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
-    keyboard::{KeyCode, PhysicalKey},
+    keyboard::{KeyCode},
     window::{Window, WindowId},
 };
-use wry::{dpi::{LogicalPosition, LogicalSize}, Rect, WebContext, WebViewBuilder, WebViewExtUnix};
-use std::path::PathBuf;
-use webkit2gtk::WebContextBuilder;
-use winit::event::{DeviceEvent, DeviceId, RawKeyEvent};
+use wry::{dpi::{LogicalPosition, LogicalSize}, Rect, WebContext, WebViewBuilder};
+use winit::event::{DeviceEvent, DeviceId};
 
 #[derive(Default)]
 struct State {
@@ -31,7 +29,7 @@ impl ApplicationHandler for State {
             std::path::PathBuf::from(concat!("/home/", env!("USER"), "/.config/pane-view/"));
         #[cfg(target_os = "linux")]
         if !std::path::Path::new(&data_path).exists() {
-            std::fs::create_dir(&data_path);
+            let _ = std::fs::create_dir(&data_path);
         }
         // unite web context
         let mut web_context = WebContext::new(Some(data_path));
@@ -77,7 +75,7 @@ impl ApplicationHandler for State {
         self.window = Some(window);
     }
 
-    fn device_event(&mut self, event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
+    fn device_event(&mut self, _event_loop: &ActiveEventLoop, _device_id: DeviceId, event: DeviceEvent) {
         match event {
             DeviceEvent::Key(key_event) if key_event.physical_key == KeyCode::F11 && key_event.state.is_pressed() => {
                 println!("F11 pressed, toggling full screen");
@@ -148,7 +146,6 @@ impl ApplicationHandler for State {
             target_os = "openbsd",
         ))]
         {
-            use gtk::prelude::*;
             while gtk::events_pending() {
                 gtk::main_iteration_do(false);
             }

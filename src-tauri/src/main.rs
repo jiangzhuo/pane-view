@@ -1,7 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-// use tauri::tray::TrayIconBuilder;
 
 use std::fs;
 use serde::{Deserialize, Serialize};
@@ -37,14 +36,4 @@ fn read_config() -> Config {
 fn main() {
     let config = read_config();
     pane_view_lib::run(config.urls);
-
-    // tauri::Builder::default()
-    //     .setup(|app| {
-    //         let tray_icon = TrayIconBuilder::new()
-    //             .icon(app.default_window_icon().unwrap().clone())
-    //             .build(app)?;
-    //         Ok(())
-    //     })
-    //     .run(tauri::generate_context!())
-    //     .expect("error while running tauri application");
 }
