@@ -5,12 +5,10 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
 };
-use wry::{
-    dpi::{LogicalPosition, LogicalSize},
-    Rect, WebViewBuilder,
-};
+use wry::{dpi::{LogicalPosition, LogicalSize}, Rect, WebContext, WebViewBuilder};
 
 use std::path::PathBuf;
+use webkit2gtk::WebContextBuilder;
 use winit::event::{DeviceEvent, DeviceId, RawKeyEvent};
 
 #[derive(Default)]
@@ -29,12 +27,29 @@ impl ApplicationHandler for State {
         let size = window.inner_size().to_logical::<u32>(window.scale_factor());
 
         // URLs for the webviews
-        let urls = vec!["https://www.google.com/", "https://www.tradingview.com/"];
+        let urls = vec!["https://www.tradingview.com/chart/YNbokaxw/?symbol=FOREXCOM%3AJP225", "https://www.tradingview.com/chart/YNbokaxw/?symbol=ETHBTC"];
+
+        #[cfg(target_os = "linux")]
+        let data_path =
+            std::path::PathBuf::from(concat!("/home/", env!("USER"), "/.config/pane-view/"));
+        #[cfg(target_os = "linux")]
+        if !std::path::Path::new(&data_path).exists() {
+            std::fs::create_dir(&data_path);
+        }
+        // unite web context
+        let mut web_context = WebContext::new(Some(data_path));
 
         // Create webviews based on provided URLs
         for (i, url) in urls.iter().enumerate() {
             let x_pos = if i == 0 { 0 } else { size.width / 2 };
-            let webview = WebViewBuilder::new()
+            let webview = WebViewBuilder::with_web_context(&mut web_context)
+                .with_initialization_script(
+                    r#"
+                    window.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                    });
+                    "#,
+                )
                 .with_bounds(Rect {
                     position: LogicalPosition::new(x_pos, 0).into(),
                     size: LogicalSize::new(size.width / 2, size.height).into(),
@@ -50,12 +65,6 @@ impl ApplicationHandler for State {
 
     fn device_event(&mut self, event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
         match event {
-            DeviceEvent::Added => {
-                println!("Device added: {:?}", device_id);
-            }
-            DeviceEvent::Removed => {
-                println!("Device removed: {:?}", device_id);
-            }
             DeviceEvent::Key(key_event) if key_event.physical_key == KeyCode::F11 && key_event.state.is_pressed() => {
                 println!("F11 pressed, toggling full screen");
                 if let Some(window) = &self.window {
@@ -78,6 +87,7 @@ impl ApplicationHandler for State {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        println!("Handling window event: {:?}", event);
         match event {
             WindowEvent::Resized(size) => {
                 if let Some(window) = &self.window {
@@ -96,23 +106,6 @@ impl ApplicationHandler for State {
             WindowEvent::CloseRequested => {
                 std::process::exit(0);
             }
-            // WindowEvent::KeyboardInput { event, .. } => {
-            //     println!("Keyboard input event: {:?}", event);
-            //     if let PhysicalKey::Code(KeyCode::F11) = event.physical_key {
-            //         println!("F11 key was pressed!");
-            //         if event.state == ElementState::Pressed {
-            //             if let Some(window) = &self.window {
-            //                 if window.fullscreen().is_some() {
-            //                     println!("Unsetting fullscreen");
-            //                     window.set_fullscreen(None);
-            //                 } else {
-            //                     println!("Setting fullscreen");
-            //                     window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
-            //                 }
-            //             }
-            //         }
-            //     }
-            // }
             _ => {}
         }
     }
