@@ -14,6 +14,7 @@ use winit::event::{DeviceEvent, DeviceId, RawKeyEvent};
 struct State {
     window: Option<Window>,
     webviews: Vec<wry::WebView>,
+    urls: Vec<String>,
 }
 
 impl ApplicationHandler for State {
@@ -25,9 +26,6 @@ impl ApplicationHandler for State {
 
         let size = window.inner_size().to_logical::<u32>(window.scale_factor());
 
-        // URLs for the webviews
-        let urls = vec!["https://www.tradingview.com/chart/?symbol=FOREXCOM%3AJP225", "https://www.tradingview.com/chart/?symbol=ETHBTC"];
-
         #[cfg(target_os = "linux")]
         let data_path =
             std::path::PathBuf::from(concat!("/home/", env!("USER"), "/.config/pane-view/"));
@@ -38,9 +36,26 @@ impl ApplicationHandler for State {
         // unite web context
         let mut web_context = WebContext::new(Some(data_path));
 
+        // Calculate dimensions based on number of URLs
+        let url_count = self.urls.len();
+        let (columns, rows) = match url_count {
+            1 => (1, 1),
+            2 => (2, 1),
+            3 => (3, 1),
+            4 => (2, 2),
+            _ => unreachable!(), // This should never happen due to validation in main.rs
+        };
+
+        let columns = columns as u32;
+        let rows = rows as u32;
+        let cell_width = size.width / columns;
+        let cell_height = size.height / rows;
+
         // Create webviews based on provided URLs
-        for (i, url) in urls.iter().enumerate() {
-            let x_pos = if i == 0 { 0 } else { size.width / 2 };
+        for (i, url) in self.urls.iter().enumerate() {
+            let i = i as u32;
+            let x_pos = (i % columns) * cell_width;
+            let y_pos = (i / columns) * cell_height;
             let webview = WebViewBuilder::with_web_context(&mut web_context)
                 .with_initialization_script(
                     r#"
@@ -50,10 +65,10 @@ impl ApplicationHandler for State {
                     "#,
                 )
                 .with_bounds(Rect {
-                    position: LogicalPosition::new(x_pos, 0).into(),
-                    size: LogicalSize::new(size.width / 2, size.height).into(),
+                    position: LogicalPosition::new(x_pos, y_pos).into(),
+                    size: LogicalSize::new(cell_width, cell_height).into(),
                 })
-                .with_url(*url)
+                .with_url(url.clone())
                 .build_as_child(&window)
                 .unwrap();
             self.webviews.push(webview);
@@ -86,17 +101,32 @@ impl ApplicationHandler for State {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        println!("Handling window event: {:?}", event);
         match event {
             WindowEvent::Resized(size) => {
                 if let Some(window) = &self.window {
                     let size = size.to_logical::<u32>(window.scale_factor());
+                    let url_count = self.webviews.len();
+                    let (columns, rows) = match url_count {
+                        1 => (1, 1),
+                        2 => (2, 1),
+                        3 => (3, 1),
+                        4 => (2, 2),
+                        _ => unreachable!(),
+                    };
+
+                    let columns = columns as u32;
+                    let rows = rows as u32;
+                    let cell_width = size.width / columns;
+                    let cell_height = size.height / rows;
+
                     for (i, webview) in self.webviews.iter().enumerate() {
-                        let x_pos = if i == 0 { 0 } else { size.width / 2 };
+                        let i = i as u32;
+                        let x_pos = (i % columns) * cell_width;
+                        let y_pos = (i / columns) * cell_height;
                         webview
                             .set_bounds(Rect {
-                                position: LogicalPosition::new(x_pos, 0).into(),
-                                size: LogicalSize::new(size.width / 2, size.height).into(),
+                                position: LogicalPosition::new(x_pos, y_pos).into(),
+                                size: LogicalSize::new(cell_width, cell_height).into(),
                             })
                             .unwrap();
                     }
@@ -128,7 +158,7 @@ impl ApplicationHandler for State {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
+pub fn run(urls: Vec<String>) {
     println!("Starting application...");
 
     #[cfg(any(
@@ -153,7 +183,11 @@ pub fn run() {
     }
 
     let event_loop = EventLoop::new().unwrap();
-    let mut state = State::default();
+    let mut state = State {
+        window: None,
+        webviews: Vec::new(),
+        urls,
+    };
 
     event_loop.run_app(&mut state).unwrap();
 }

@@ -5,30 +5,61 @@ A modern window management tool built with Tauri.
 ## Features
 
 - 🚀 Built with Tauri for optimal performance
-- 📊 Multi-pane TradingView integration
+- 📊 Flexible multi-pane layout supporting 1-4 views
 - 🔄 Persistent web context with local data storage
 - ⌨️ Keyboard shortcuts support (F11 for fullscreen toggle)
 - 🖱️ Custom right-click menu handling
 - 🎨 Modern split-pane interface
 - 💻 Cross-platform support (Windows, macOS, Linux)
+- ⚙️ Configurable URLs via TOML configuration
 
 ## Technical Details
 
 ### Window Management
-- Split-pane layout with dynamic resizing
-- Each pane takes exactly half of the window width
-- Automatic layout adjustment on window resize
+- Dynamic split-pane layout supporting 1-4 views
+- Automatic layout adjustment based on number of URLs:
+  - 1 URL: Single view
+  - 2 URLs: Horizontal split (2 columns)
+  - 3 URLs: Horizontal split (3 columns)
+  - 4 URLs: Grid layout (2x2)
+- Automatic window resizing
 - Fullscreen toggle support with F11 key
 
+### Configuration
+- User configuration stored in `~/.config/pane-view/config.toml`
+- Customizable URLs via TOML configuration
+- Default configuration includes TradingView charts
+
 ### Web Integration
-- Unified web context across panes
+- Unified web context across all panes
 - Persistent data storage in `~/.config/pane-view/` (Linux)
 - Custom JavaScript injection for UI customization
-- Default TradingView chart configuration
 
-### Default URLs
-- Left pane: TradingView JP225 chart
-- Right pane: TradingView ETHBTC chart
+## Why Pane View?
+
+Pane View transforms how you utilize your screen real estate for web content viewing:
+
+### Before vs After
+
+| Before | After |
+|--------|-------|
+| ![Before](docs/before.jpg) | ![After](docs/after.jpg) |
+
+#### Traditional Browser Limitations
+- Screen space wasted by title bars and address bars
+- Limited to displaying one window per screen in fullscreen mode
+- Inefficient for information display scenarios
+
+#### Pane View Advantages
+- Clean, distraction-free interface with no title bars or address bars in fullscreen mode
+- Display multiple web pages simultaneously
+- Maximizes screen utilization
+- Perfect for:
+  - Information displays and dashboards
+  - Trading and market monitoring
+  - Multi-screen setups
+  - Digital signage
+  - Control room displays
 
 ## Tech Stack
 

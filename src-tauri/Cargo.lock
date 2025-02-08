@@ -2894,6 +2894,7 @@ name = "pane-view"
 version = "0.1.0"
 dependencies = [
  "cookie",
+ "dirs 5.0.1",
  "dpi",
  "gdkx11",
  "gtk",
@@ -2911,6 +2912,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-opener",
  "thiserror 2.0.11",
+ "toml 0.8.20",
  "tracing",
  "tray-icon 0.11.3",
  "webkit2gtk",
