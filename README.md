@@ -1,5 +1,7 @@
 # Pane View
 
+[![Made with AI](https://img.shields.io/badge/made_with_AI-Claude_3.5_Sonnet-green?style=for-the-badge)](https://github.com/jiangzhuo/pane-view)
+
 A modern window management tool built with Tauri.
 
 ## Features
